@@ -1,47 +1,28 @@
-from collections import deque
+from collections import deque  # Estructura eficiente para manejar la cola
 
 def busqueda_anchura(grafo, inicio, objetivo):
-    """
-    Implementación del algoritmo de Búsqueda en Anchura (BFS)
-    
-    Args:
-        grafo (dict): Grafo representado como diccionario de listas de adyacencia
-        inicio: Nodo inicial de la búsqueda
-        objetivo: Nodo que queremos encontrar
-    
-    Returns:
-        list: Camino desde el inicio hasta el objetivo, o None si no se encuentra
-    """
-    # Cola para los nodos a explorar
-    cola = deque()
-    cola.append(inicio)
-    
-    # Diccionario para registrar nodos visitados y sus predecesores
-    visitados = {inicio: None}
-    
+    cola = deque([inicio])             # Cola FIFO con el nodo inicial
+    visitados = {inicio: None}         # Almacena nodos visitados y sus padres
+
     while cola:
-        nodo_actual = cola.popleft()
-        
-        # Si encontramos el objetivo, reconstruimos el camino
-        if nodo_actual == objetivo:
+        actual = cola.popleft()        # Sacamos el primer nodo en la cola
+
+        if actual == objetivo:         # Si encontramos el objetivo, reconstruimos el camino
             camino = []
-            while nodo_actual is not None:
-                camino.append(nodo_actual)
-                nodo_actual = visitados[nodo_actual]
-            return camino[::-1]  # Invertimos el camino para que vaya de inicio a objetivo
-        
-        # Exploramos los vecinos del nodo actual
-        for vecino in grafo[nodo_actual]:
+            while actual is not None:
+                camino.append(actual)
+                actual = visitados[actual]
+            return camino[::-1]        # Se invierte para ir de inicio a objetivo
+
+        for vecino in grafo[actual]:   # Exploramos vecinos no visitados
             if vecino not in visitados:
                 cola.append(vecino)
-                visitados[vecino] = nodo_actual
-    
-    # Si la cola se vacía sin encontrar el objetivo
-    return None
+                visitados[vecino] = actual
+
+    return None  # Si no se encuentra el objetivo
 
 # Ejemplo de uso
 if __name__ == "__main__":
-    # Grafo de ejemplo (diccionario de listas de adyacencia)
     grafo = {
         'A': ['B', 'C'],
         'B': ['A', 'D', 'E'],
@@ -50,14 +31,12 @@ if __name__ == "__main__":
         'E': ['B', 'F'],
         'F': ['C', 'E']
     }
-    
+
     inicio = 'A'
     objetivo = 'F'
-    
-    print(f"Buscando camino desde {inicio} hasta {objetivo}...")
     camino = busqueda_anchura(grafo, inicio, objetivo)
-    
+
     if camino:
         print("Camino encontrado:", " -> ".join(camino))
     else:
-        print(f"No se encontró un camino desde {inicio} hasta {objetivo}")
+        print("Camino no encontrado")
