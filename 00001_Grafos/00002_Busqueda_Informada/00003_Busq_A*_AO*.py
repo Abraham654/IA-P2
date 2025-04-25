@@ -1,47 +1,65 @@
+import heapq
+
+def a_star(grafo, inicio, objetivo, heuristica):
+    frontera = []  # Cola: (f_score, nodo)
+    heapq.heappush(frontera, (heuristica(inicio, objetivo), inicio))
+    g_score = {inicio: 0}    # Costo real desde el inicio
+    padres = {inicio: None}  # Rutas óptimas
+
+    while frontera:
+        _, actual = heapq.heappop(frontera)
+
+        if actual == objetivo:
+            camino = []
+            while actual:
+                camino.append(actual)
+                actual = padres[actual]
+            return camino[::-1], g_score[objetivo]
+
+        for vecino, costo in grafo[actual].items():
+            g_tentativo = g_score[actual] + costo
+            if vecino not in g_score or g_tentativo < g_score[vecino]:
+                padres[vecino] = actual
+                g_score[vecino] = g_tentativo
+                f_score = g_tentativo + heuristica(vecino, objetivo)
+                heapq.heappush(frontera, (f_score, vecino))
+
+    return None, None
+
 def ao_star(grafo, inicio, objetivo, heuristica):
-    solucion = {}          # Guarda (costo, camino) por nodo
-    expandido = set()      # Nodos ya explorados
+    solucion = {objetivo: (0, [objetivo])}
+    expandido = set()
 
     def costo(nodo):
         if nodo in solucion:
-            return solucion[nodo][0]  # Si ya se calculó, se reutiliza
+            return solucion[nodo][0]
 
         if nodo in grafo:
-            if isinstance(grafo[nodo], dict):  # Nodo OR: escoger la mejor opción
-                mejor_costo = float('inf')
-                mejor_camino = None
-                for hijo, c_arco in grafo[nodo].items():
-                    c_total = c_arco + costo(hijo)
-                    if c_total < mejor_costo:
-                        mejor_costo = c_total
-                        mejor_camino = [nodo] + solucion[hijo][1]
-                solucion[nodo] = (mejor_costo, mejor_camino)
-                return mejor_costo
-
-            else:  # Nodo AND: se deben considerar todos los subconjuntos
-                c_total = 0
-                camino_total = [nodo]
+            if isinstance(grafo[nodo], dict):  # OR
+                mejor, camino = float('inf'), None
+                for hijo, c in grafo[nodo].items():
+                    total = c + costo(hijo)
+                    if total < mejor:
+                        mejor = total
+                        camino = [nodo] + solucion[hijo][1]
+                solucion[nodo] = (mejor, camino)
+                return mejor
+            else:  # AND
+                total, camino = 0, [nodo]
                 for conjunto in grafo[nodo]:
-                    mejor = float('inf')
-                    camino_mejor = []
+                    mejor, subcamino = float('inf'), []
                     for subnodo in conjunto:
-                        temp = conjunto[subnodo] + costo(subnodo)
-                        if temp < mejor:
-                            mejor = temp
-                            camino_mejor = solucion[subnodo][1]
-                    c_total += mejor
-                    camino_total += camino_mejor
-                solucion[nodo] = (c_total, camino_total)
-                return c_total
+                        val = conjunto[subnodo] + costo(subnodo)
+                        if val < mejor:
+                            mejor = val
+                            subcamino = solucion[subnodo][1]
+                    total += mejor
+                    camino += subcamino
+                solucion[nodo] = (total, camino)
+                return total
 
-        # Nodo hoja: si es el objetivo, costo 0; si no, no viable
-        if nodo == objetivo:
-            solucion[nodo] = (0, [nodo])
-            return 0
         solucion[nodo] = (float('inf'), None)
         return float('inf')
-
-    solucion[objetivo] = (0, [objetivo])  # Se parte del objetivo
 
     while inicio not in solucion or solucion[inicio][0] == float('inf'):
         nodo = inicio
@@ -56,6 +74,34 @@ def ao_star(grafo, inicio, objetivo, heuristica):
                 return None, None
 
         expandido.add(nodo)
-        costo(nodo)  # Recalcula costos
+        costo(nodo)
 
-    return solucion[inicio][1], solucion[inicio][0]  # Camino y costo total
+    return solucion[inicio][1], solucion[inicio][0]
+
+# Grafo para A*
+grafo_a = {
+    'A': {'B': 1, 'C': 3},
+    'B': {'D': 2, 'E': 4},
+    'C': {'F': 2},
+    'D': {},
+    'E': {'F': 1},
+    'F': {}
+}
+
+def h_simple(n, objetivo): return 0  # Heurística nula
+
+camino, costo = a_star(grafo_a, 'A', 'F', h_simple)
+print(f"A*: Camino {camino}, Costo {costo}")
+
+# Grafo para AO* con nodos AND-OR
+grafo_ao = {
+    'A': {'B': 1, 'C': 3},
+    'B': [{'D': 2}, {'E': 4}],
+    'C': {'F': 2},
+    'D': {},
+    'E': {'F': 1},
+    'F': {}
+}
+
+camino_ao, costo_ao = ao_star(grafo_ao, 'A', 'F', h_simple)
+print(f"AO*: Camino {camino_ao}, Costo {costo_ao}")
